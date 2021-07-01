@@ -1,0 +1,3 @@
+domain: my.domain
+repo: github.com/ishii1648/admission-webhook-poc
+version: "2"
