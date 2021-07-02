@@ -26,7 +26,6 @@ run: generate fmt vet manifests
 	go run ./main.go
 
 redeploy: clean deploy
-	kubectl apply -f test/
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
