@@ -1,8 +1,10 @@
 module github.com/ishii1648/admission-webhook-poc
 
-go 1.13
+go 1.15
 
 require (
+	github.com/go-logr/logr v0.1.0
+	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v0.17.2

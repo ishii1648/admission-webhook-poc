@@ -16,8 +16,14 @@ spec:
         - mountPath: /tmp/k8s-webhook-server/serving-certs
           name: cert
           readOnly: true
+        - name: webhook-config
+          mountPath: /etc/webhook/config
+          readOnly: true
       volumes:
       - name: cert
         secret:
           defaultMode: 420
           secretName: webhook-server-cert
+      - name: webhook-config
+        configMap:
+          name: sidecar-injector-configmap

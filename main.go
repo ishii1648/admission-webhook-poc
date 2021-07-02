@@ -18,9 +18,11 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"os"
 
 	"github.com/ishii1648/admission-webhook-poc/webhook"
+	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -37,17 +39,32 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-
 	// +kubebuilder:scaffold:scheme
+}
+
+func loadConfig(configFile string) (*webhook.Config, error) {
+	data, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg webhook.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var sidecarConfig string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&sidecarConfig, "sidecarConfig", "/etc/webhook/config/sidecarconfig.yaml", "Wehbook sidecar config")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
@@ -68,8 +85,14 @@ func main() {
 	setupLog.Info("setting up webhook server")
 	hookServer := mgr.GetWebhookServer()
 
+	config, err := loadConfig(sidecarConfig)
+	if err != nil {
+		setupLog.Error(err, "unable to load config")
+		os.Exit(1)
+	}
+
 	setupLog.Info("registering webhooks to the webhook server")
-	hookServer.Register("/mutate-v1-pod", &pkgwebhook.Admission{Handler: &webhook.PodAnnotator{}})
+	hookServer.Register("/mutate-v1-pod", &pkgwebhook.Admission{Handler: &webhook.SidecarInjector{Name: "webserver", SidecarConfig: config}})
 
 	// +kubebuilder:scaffold:builder
 
