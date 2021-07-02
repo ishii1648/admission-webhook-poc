@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/prometheus/common/log"
 	corev1 "k8s.io/api/core/v1"
+	// appsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	// "github.com/imdario/mergo"
 )
-
-var log = logf.Log.WithName("sidecar-injector")
 
 // +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=fail,groups="",resources=pods,verbs=create;update,versions=v1,name=mpod.kb.io
 
@@ -25,7 +25,7 @@ type SidecarInjector struct {
 }
 
 type Config struct {
-	Containers []corev1.Container `yaml:"containers"`
+	Spec corev1.PodSpec `json:"spec"`
 }
 
 // SidecarInjector adds an annotation to every incoming pods.
@@ -48,11 +48,13 @@ func (s *SidecarInjector) Handle(ctx context.Context, req admission.Request) adm
 	if shoudInjectSidecar {
 		log.Info("Injecting sidecar...")
 
-		pod.Spec.Containers = append(pod.Spec.Containers, s.SidecarConfig.Containers...)
-		pod.Annotations["logging-sidecar-added"] = "true"
+		pod.Spec.Volumes = append(pod.Spec.Volumes, s.SidecarConfig.Spec.Volumes...)
+		pod.Spec.Containers = append(pod.Spec.Containers, s.SidecarConfig.Spec.Containers...)
+		pod.Annotations["webserver-sidecar-added"] = "true"
 
-		// log.Info("Sidecar ", s.Name, " injected.")
-		log.Info("Sidecar injected.")
+		log.Info("Sidecar ", s.Name, " injected.")
+	} else {
+		log.Info("Inject not needed.")
 	}
 
 	marshaledPod, err := json.Marshal(pod)
@@ -83,21 +85,21 @@ func (s *SidecarInjector) InjectDecoder(d *admission.Decoder) error {
 
 // InjectDecoder injects the decoder.
 func shoudInject(pod *corev1.Pod) bool {
-	shouldInjectSidecar, err := strconv.ParseBool(pod.Annotations["inject-logging-sidecar"])
+	shouldInjectSidecar, err := strconv.ParseBool(pod.Annotations["webserver-injection"])
 
 	if err != nil {
 		shouldInjectSidecar = false
 	}
 
 	if shouldInjectSidecar {
-		alreadyUpdated, err := strconv.ParseBool(pod.Annotations["logging-sidecar-added"])
+		alreadyUpdated, err := strconv.ParseBool(pod.Annotations["webserver-sidecar-added"])
 
 		if err == nil && alreadyUpdated {
 			shouldInjectSidecar = false
 		}
 	}
 
-	// log.Info("Should Inject: ", shouldInjectSidecar)
+	log.Info("Should Inject: ", shouldInjectSidecar)
 
 	return shouldInjectSidecar
 }

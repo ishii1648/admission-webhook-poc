@@ -25,15 +25,20 @@ manager: generate fmt vet
 run: generate fmt vet manifests
 	go run ./main.go
 
+redeploy: clean deploy
+	kubectl apply -f test/
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	kind load docker-image ${IMG}
 	kind load docker-image nginx:1.21.0
-	cd config/manager && kustomize edit set image controller=${IMG}
+	cd config/webhook && kustomize edit set image controller=${IMG}
+	kubectl apply -f config/configmap.yaml
 	kustomize build config/default | kubectl apply -f -
 
 clean: manifests
+	-kubectl delete -f test/
+	-kubectl delete -f config/configmap.yaml
 	kustomize build config/default | kubectl delete -f -
 
 # Generate manifests e.g. CRD, RBAC etc.

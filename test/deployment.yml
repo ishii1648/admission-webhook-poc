@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+spec:
+  selector:
+    matchLabels:
+      app: webapp
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        webserver-injection: "true"
+      labels:
+        app: webapp
+    spec:
+      containers:
+        - name: php-fpm
+          image: php:8.0-fpm
+          resources:
+            requests:
+              cpu: 100m
+          ports:
+            - name: php-fpm
+              containerPort: 9000
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html
+              name: index
+      volumes:
+        - name: index
+          configMap:
+            name: index-php

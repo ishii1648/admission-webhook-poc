@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |-
+    server {
+      listen 80;
+      root   /usr/share/nginx/html;
+      location / {
+        index          index.php index.html index.htm;
+        fastcgi_pass   localhost:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+      }
+    }
