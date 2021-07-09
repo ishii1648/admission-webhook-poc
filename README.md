@@ -31,3 +31,9 @@ Let's deploy php-fpm as deployment, then admission webhook automatically inject 
 ```
 $ kubectl apply -f sample/
 ```
+
+### 5. port forward to webapp
+
+```
+kubectl port-forward service/webapp 8080:80
+```
