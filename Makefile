@@ -32,7 +32,6 @@ deploy: manifests
 	kind load docker-image ${IMG}
 	kind load docker-image nginx:1.21.0
 	cd config/webhook && kustomize edit set image controller=${IMG}
-	kubectl apply -f config/configmap.yaml
 	kustomize build config/default | kubectl apply -f -
 
 clean: manifests
